@@ -183,6 +183,7 @@
   <span class="pill total" id="pill-total">— resultados</span>
   <span class="pill warn" id="pill-warn"><span class="dot r"></span> <span id="warn-count">0</span> sin stock</span>
   <span class="pill" id="pill-emails" style="cursor:pointer; background:#e0e7ff; color:#3730a3;">📧 Correos de respaldo</span>
+  <span class="pill" id="pill-download" style="cursor:pointer; background:#dcfce7; color:#166534;">⬇️ Descargar Excel</span>
 </div>
 
 <div class="installbar" id="installbar">
@@ -199,6 +200,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL = "https://edkqfngzillrhscrykid.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVka3Fmbmd6aWxscmhzY3J5a2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMDY4NDUsImV4cCI6MjEwMjY4Mjg0NX0.-PZ5zLFbXyA6O1inHqR0HOj83NdcqbZfX1dXh9lskP8";
@@ -632,6 +634,26 @@ document.getElementById('pill-warn').addEventListener('click', ()=>{
   render();
 });
 document.getElementById('pill-emails').addEventListener('click', openEmails);
+document.getElementById('pill-download').addEventListener('click', descargarExcel);
+
+function descargarExcel(){
+  if (!ITEMS.length){ alert('Todavía no hay datos cargados, espera un segundo e intenta de nuevo.'); return; }
+  if (!window.XLSX){ alert('No se pudo cargar el generador de Excel. Revisa tu conexión a internet e intenta de nuevo.'); return; }
+  const headers = ['Tag','Descripción','Ubicación','Caldera','Categoría','Variable de control','Tipo de sensor','Setpoint','Reset','N° de contacto','Marca','Modelo','N° de serie','Código repuesto','Función','Damping','Solicitud de compra','Última verificación','Comentario','Hoja origen','Cantidad','Stock mínimo','Ubicación bodega','Proveedor','Última actualización'];
+  const rows = [...ITEMS].sort((a,b)=> (a.tag||'').localeCompare(b.tag||'')).map(i => [
+    i.tag, i.descripcion, i.ubicacion, i.caldera, i.categoria, i.variable_control, i.tipo_sensor,
+    i.setpoint, i.reset_valor, i.numero_contacto, i.marca, i.modelo, i.numero_serie, i.codigo_repuesto,
+    i.funcion, i.damping, i.solicitud_compra, i.ultima_verificacion, i.comentario, i.hoja_origen,
+    i.cantidad ?? 0, i.stock_minimo ?? 1, i.ubicacion_bodega, i.proveedor,
+    i.updated_at ? new Date(i.updated_at).toLocaleString('es-CL') : ''
+  ]);
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws['!cols'] = headers.map(()=>({wch:18}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Instrumentos');
+  const fecha = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `instrumentos_${fecha}.xlsx`);
+}
 document.getElementById('install-close').addEventListener('click', ()=>{
   document.getElementById('installbar').style.display='none';
   try{ localStorage.setItem('installbar-dismissed','1'); }catch(e){}
