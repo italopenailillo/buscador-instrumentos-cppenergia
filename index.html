@@ -510,6 +510,7 @@ document.getElementById('overlay').addEventListener('click', (e)=>{
 });
 
 async function saveStock(id){
+  if (!checkPassword()) return;
   const btn = document.getElementById('save-btn');
   const cantidad = parseInt(document.getElementById('edit-cantidad').value || '0', 10);
   const stock_minimo = parseInt(document.getElementById('edit-minimo').value || '1', 10);
