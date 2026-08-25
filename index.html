@@ -182,6 +182,7 @@
 <div class="summary">
   <span class="pill total" id="pill-total">— resultados</span>
   <span class="pill warn" id="pill-warn"><span class="dot r"></span> <span id="warn-count">0</span> sin stock</span>
+  <span class="pill" id="pill-emails" style="cursor:pointer; background:#e0e7ff; color:#3730a3;">📧 Correos de respaldo</span>
 </div>
 
 <div class="installbar" id="installbar">
@@ -449,17 +450,90 @@ function renderCaract(i, editMode){
 }
 
 let editUnlocked = false;
-function tryUnlockEdit(i){
-  if (!editUnlocked){
-    const pass = prompt('Ingresa la clave para editar las características:');
-    if (pass === null) return;
-    if (pass !== 'Cpp1234'){
-      alert('Clave incorrecta.');
-      return;
-    }
-    editUnlocked = true;
+function checkPassword(){
+  if (editUnlocked) return true;
+  const pass = prompt('Ingresa la clave:');
+  if (pass === null) return false;
+  if (pass !== 'Cpp1234'){
+    alert('Clave incorrecta.');
+    return false;
   }
+  editUnlocked = true;
+  return true;
+}
+function tryUnlockEdit(i){
+  if (!checkPassword()) return;
   renderCaract(i, true);
+}
+
+let EMAILS = [];
+async function loadEmails(){
+  const { data, error } = await sb.from('destinatarios').select('*').order('email');
+  if (!error) EMAILS = data || [];
+}
+function renderEmailsList(){
+  const box = document.getElementById('emails-list');
+  if (!box) return;
+  if (!EMAILS.length){
+    box.innerHTML = '<div class="empty" style="padding:20px 0;">Sin correos agregados todavía.</div>';
+    return;
+  }
+  box.innerHTML = EMAILS.map(e => `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border);">
+      <span style="font-size:14px; word-break:break-all;">${escapeHtml(e.email)}</span>
+      <button class="btn ghost" style="flex:none; padding:5px 10px; font-size:12px;" onclick="removeEmail(${e.id})">Quitar</button>
+    </div>
+  `).join('');
+}
+async function openEmails(){
+  if (!checkPassword()) return;
+  await loadEmails();
+  const overlay = document.getElementById('overlay');
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = `
+    <div class="sheet-head">
+      <div class="grabber"></div>
+      <div>
+        <h2>Correos de respaldo mensual</h2>
+        <p>El día 1 de cada mes se envía el Excel completo de la base de datos a estos correos.</p>
+      </div>
+      <button class="closebtn" id="sheet-close">✕</button>
+    </div>
+    <div class="section">
+      <div style="display:flex; gap:8px;">
+        <input id="new-email" type="email" placeholder="correo@empresa.cl" style="flex:1; padding:9px 10px; border-radius:9px; border:1px solid var(--border); font-size:15px;">
+        <button class="btn primary" id="add-email-btn" style="flex:none; padding:10px 16px;">Agregar</button>
+      </div>
+      <div id="emails-list" style="margin-top:14px;"></div>
+    </div>
+  `;
+  overlay.classList.add('open');
+  document.getElementById('sheet-close').onclick = closeDetail;
+  document.getElementById('add-email-btn').onclick = addEmail;
+  document.getElementById('new-email').addEventListener('keydown', (e)=>{ if (e.key === 'Enter') addEmail(); });
+  renderEmailsList();
+}
+async function addEmail(){
+  const input = document.getElementById('new-email');
+  const email = input.value.trim();
+  if (!email || !email.includes('@') || !email.includes('.')){
+    alert('Ingresa un correo válido.');
+    return;
+  }
+  const { error } = await sb.from('destinatarios').insert({ email });
+  if (error){
+    alert(error.message.includes('duplicate') ? 'Ese correo ya está agregado.' : 'No se pudo agregar: ' + error.message);
+    return;
+  }
+  input.value = '';
+  await loadEmails();
+  renderEmailsList();
+}
+async function removeEmail(id){
+  const { error } = await sb.from('destinatarios').delete().eq('id', id);
+  if (error){ alert('No se pudo quitar: ' + error.message); return; }
+  await loadEmails();
+  renderEmailsList();
 }
 
 async function saveCaract(id){
@@ -557,6 +631,7 @@ document.getElementById('pill-warn').addEventListener('click', ()=>{
   document.getElementById('pill-warn').classList.toggle('active', soloSinStock);
   render();
 });
+document.getElementById('pill-emails').addEventListener('click', openEmails);
 document.getElementById('install-close').addEventListener('click', ()=>{
   document.getElementById('installbar').style.display='none';
   try{ localStorage.setItem('installbar-dismissed','1'); }catch(e){}
