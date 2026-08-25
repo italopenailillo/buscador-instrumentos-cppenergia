@@ -356,34 +356,7 @@ function openDetail(id){
       </div>
     </div>
 
-    <div class="section">
-      <h3>Ubicación y clasificación</h3>
-      <div class="grid">
-        <div class="field"><label>Caldera</label>${fieldVal(CALDERA_LABEL[i.caldera]||i.caldera)}</div>
-        <div class="field"><label>Categoría</label>${fieldVal(i.categoria)}</div>
-        <div class="field"><label>Ubicación física</label>${fieldVal(i.ubicacion)}</div>
-        <div class="field"><label>Variable de control</label>${fieldVal(i.variable_control)}</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <h3>Ficha técnica</h3>
-      <div class="grid">
-        <div class="field"><label>Marca</label>${fieldVal(i.marca)}</div>
-        <div class="field"><label>Modelo</label>${fieldVal(i.modelo)}</div>
-        <div class="field"><label>N° de serie</label>${fieldVal(i.numero_serie)}</div>
-        <div class="field"><label>Código repuesto</label>${fieldVal(i.codigo_repuesto)}</div>
-        <div class="field"><label>Tipo de sensor</label>${fieldVal(i.tipo_sensor)}</div>
-        <div class="field"><label>Función</label>${fieldVal(i.funcion)}</div>
-        <div class="field"><label>Setpoint</label>${fieldVal(i.setpoint)}</div>
-        <div class="field"><label>Reset</label>${fieldVal(i.reset_valor)}</div>
-        <div class="field"><label>N° de contacto</label>${fieldVal(i.numero_contacto)}</div>
-        <div class="field"><label>Damping</label>${fieldVal(i.damping)}</div>
-        <div class="field"><label>Solicitud de compra</label>${fieldVal(i.solicitud_compra)}</div>
-        <div class="field"><label>Última verificación</label>${fieldVal(i.ultima_verificacion)}</div>
-      </div>
-      ${i.comentario ? `<div class="comentario">💬 ${escapeHtml(i.comentario)}</div>` : ''}
-    </div>
+    <div id="caract-container"></div>
 
     <div class="section" style="padding-top:0;">
       <h3>Origen del dato</h3>
@@ -396,6 +369,131 @@ function openDetail(id){
   overlay.classList.add('open');
   document.getElementById('sheet-close').onclick = closeDetail;
   document.getElementById('save-btn').onclick = ()=> saveStock(i.id);
+  renderCaract(i, false);
+}
+
+function renderCaract(i, editMode){
+  const el = document.getElementById('caract-container');
+  if (!el) return;
+  if (!editMode){
+    el.innerHTML = `
+      <div class="section">
+        <h3>Ubicación y clasificación</h3>
+        <div class="grid">
+          <div class="field"><label>Caldera</label>${fieldVal(CALDERA_LABEL[i.caldera]||i.caldera)}</div>
+          <div class="field"><label>Categoría</label>${fieldVal(i.categoria)}</div>
+          <div class="field"><label>Ubicación física</label>${fieldVal(i.ubicacion)}</div>
+          <div class="field"><label>Variable de control</label>${fieldVal(i.variable_control)}</div>
+        </div>
+      </div>
+      <div class="section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+          <h3 style="margin:0;">Ficha técnica</h3>
+          <button class="btn ghost" id="edit-caract-btn" style="flex:none; padding:6px 12px; font-size:12.5px;">🔒 Editar</button>
+        </div>
+        <div class="grid">
+          <div class="field"><label>Descripción</label>${fieldVal(i.descripcion)}</div>
+          <div class="field"><label>Marca</label>${fieldVal(i.marca)}</div>
+          <div class="field"><label>Modelo</label>${fieldVal(i.modelo)}</div>
+          <div class="field"><label>N° de serie</label>${fieldVal(i.numero_serie)}</div>
+          <div class="field"><label>Código repuesto</label>${fieldVal(i.codigo_repuesto)}</div>
+          <div class="field"><label>Tipo de sensor</label>${fieldVal(i.tipo_sensor)}</div>
+          <div class="field"><label>Función</label>${fieldVal(i.funcion)}</div>
+          <div class="field"><label>Setpoint</label>${fieldVal(i.setpoint)}</div>
+          <div class="field"><label>Reset</label>${fieldVal(i.reset_valor)}</div>
+          <div class="field"><label>N° de contacto</label>${fieldVal(i.numero_contacto)}</div>
+          <div class="field"><label>Damping</label>${fieldVal(i.damping)}</div>
+          <div class="field"><label>Solicitud de compra</label>${fieldVal(i.solicitud_compra)}</div>
+          <div class="field"><label>Última verificación</label>${fieldVal(i.ultima_verificacion)}</div>
+        </div>
+        ${i.comentario ? `<div class="comentario">💬 ${escapeHtml(i.comentario)}</div>` : ''}
+      </div>
+    `;
+    const btn = document.getElementById('edit-caract-btn');
+    if (btn) btn.onclick = ()=> tryUnlockEdit(i);
+  } else {
+    const v = (x)=> (x===null||x===undefined) ? '' : String(x).replace(/"/g,'&quot;');
+    el.innerHTML = `
+      <div class="section">
+        <h3 style="margin:0 0 10px;">Editar características</h3>
+        <div class="editgrid">
+          <div class="full"><label>Descripción</label><input id="ec-descripcion" value="${v(i.descripcion)}"></div>
+          <div><label>Caldera</label><input id="ec-caldera" value="${v(i.caldera)}" placeholder="1 / 2 / 3 / 2 y 3 / Planta"></div>
+          <div><label>Categoría</label><input id="ec-categoria" value="${v(i.categoria)}"></div>
+          <div><label>Ubicación física</label><input id="ec-ubicacion" value="${v(i.ubicacion)}"></div>
+          <div><label>Variable de control</label><input id="ec-variable_control" value="${v(i.variable_control)}"></div>
+          <div><label>Marca</label><input id="ec-marca" value="${v(i.marca)}"></div>
+          <div><label>Modelo</label><input id="ec-modelo" value="${v(i.modelo)}"></div>
+          <div><label>N° de serie</label><input id="ec-numero_serie" value="${v(i.numero_serie)}"></div>
+          <div><label>Código repuesto</label><input id="ec-codigo_repuesto" value="${v(i.codigo_repuesto)}"></div>
+          <div><label>Tipo de sensor</label><input id="ec-tipo_sensor" value="${v(i.tipo_sensor)}"></div>
+          <div><label>Función</label><input id="ec-funcion" value="${v(i.funcion)}"></div>
+          <div><label>Setpoint</label><input id="ec-setpoint" value="${v(i.setpoint)}"></div>
+          <div><label>Reset</label><input id="ec-reset_valor" value="${v(i.reset_valor)}"></div>
+          <div><label>N° de contacto</label><input id="ec-numero_contacto" value="${v(i.numero_contacto)}"></div>
+          <div><label>Damping</label><input id="ec-damping" value="${v(i.damping)}"></div>
+          <div><label>Solicitud de compra</label><input id="ec-solicitud_compra" value="${v(i.solicitud_compra)}"></div>
+          <div><label>Última verificación</label><input id="ec-ultima_verificacion" type="date" value="${v(i.ultima_verificacion)}"></div>
+          <div class="full"><label>Comentario</label><input id="ec-comentario" value="${v(i.comentario)}"></div>
+        </div>
+        <div class="savebar">
+          <button class="btn primary" id="ec-save-btn">Guardar cambios</button>
+          <button class="btn ghost" id="ec-cancel-btn">Cancelar</button>
+        </div>
+        <div class="savedmsg" id="ec-saved-msg">✓ Guardado.</div>
+      </div>
+    `;
+    document.getElementById('ec-save-btn').onclick = ()=> saveCaract(i.id);
+    document.getElementById('ec-cancel-btn').onclick = ()=> renderCaract(i, false);
+  }
+}
+
+let editUnlocked = false;
+function tryUnlockEdit(i){
+  if (!editUnlocked){
+    const pass = prompt('Ingresa la clave para editar las características:');
+    if (pass === null) return;
+    if (pass !== 'Cpp1234'){
+      alert('Clave incorrecta.');
+      return;
+    }
+    editUnlocked = true;
+  }
+  renderCaract(i, true);
+}
+
+async function saveCaract(id){
+  const btn = document.getElementById('ec-save-btn');
+  const val = (fid)=> { const el = document.getElementById(fid); const t = el.value.trim(); return t === '' ? null : t; };
+  const updates = {
+    descripcion: val('ec-descripcion'),
+    caldera: val('ec-caldera'),
+    categoria: val('ec-categoria'),
+    ubicacion: val('ec-ubicacion'),
+    variable_control: val('ec-variable_control'),
+    marca: val('ec-marca'),
+    modelo: val('ec-modelo'),
+    numero_serie: val('ec-numero_serie'),
+    codigo_repuesto: val('ec-codigo_repuesto'),
+    tipo_sensor: val('ec-tipo_sensor'),
+    funcion: val('ec-funcion'),
+    setpoint: val('ec-setpoint'),
+    reset_valor: val('ec-reset_valor'),
+    numero_contacto: val('ec-numero_contacto'),
+    damping: val('ec-damping'),
+    solicitud_compra: val('ec-solicitud_compra'),
+    ultima_verificacion: val('ec-ultima_verificacion'),
+    comentario: val('ec-comentario'),
+  };
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const { error } = await sb.from('instrumentos').update(updates).eq('id', id);
+  btn.disabled = false; btn.textContent = 'Guardar cambios';
+  if (error){ alert('No se pudo guardar: ' + error.message); return; }
+  document.getElementById('ec-saved-msg').classList.add('show');
+  setTimeout(()=>{
+    const i2 = ITEMS.find(x=>String(x.id)===String(id));
+    if (i2) renderCaract(i2, false);
+  }, 900);
 }
 function closeDetail(){
   document.getElementById('overlay').classList.remove('open');
